@@ -4,9 +4,72 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>우리반 방명록</title>
+  <style>
+    body { font-family: sans-serif; max-width: 560px; margin: 40px auto; padding: 0 16px; }
+    input, textarea, button { width: 100%; padding: 10px; margin: 4px 0; box-sizing: border-box; font-size: 16px; }
+    button { background: #3ecf8e; border: 0; color: #fff; border-radius: 6px; cursor: pointer; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 10px 0; }
+    .meta { color: #888; font-size: 12px; }
+  </style>
 </head>
 <body>
-  <h1>🎉 LIONICE 방명록</h1>
-  <p>곧 여기에 방명록이 생깁니다!</p>
+  <h1>🎉 우리반 방명록</h1>
+
+  <input id="name" placeholder="이름"/>
+  <textarea id="message" rows="3" placeholder="남기고 싶은 말"></textarea>
+  <button id="send">남기기</button>
+
+  <div id="list">불러오는 중…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ▼▼ 본인 값으로 교체 ▼▼
+    const SUPABASE_URL = "https://ndjdisjsffduilzsyihe.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_4UY6WskC9Yy2-XuSY0CteQ_wU2A9i_f";
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 읽기 (select)
+    async function loadMessages() {
+      const { data, error } = await db
+        .from("guestbook")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      const list = document.getElementById("list");
+      if (error) { list.textContent = "에러: " + error.message; return; }
+
+      list.innerHTML = "";
+      data.forEach(row => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const title = document.createElement("strong");
+        title.textContent = row.name;
+        const body = document.createElement("p");
+        body.textContent = row.message;
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = new Date(row.created_at).toLocaleString("ko-KR");
+        card.append(title, body, meta);
+        list.appendChild(card);
+      });
+    }
+
+    // 쓰기 (insert)
+    document.getElementById("send").addEventListener("click", async () => {
+      const name = document.getElementById("name").value.trim();
+      const message = document.getElementById("message").value.trim();
+      if (!name || !message) return alert("이름과 내용을 입력하세요");
+
+      const { error } = await db.from("guestbook").insert({ name, message });
+      if (error) return alert("저장 실패: " + error.message);
+
+      document.getElementById("message").value = "";
+      loadMessages();
+    });
+
+    loadMessages();
+  </script>
 </body>
 </html>
